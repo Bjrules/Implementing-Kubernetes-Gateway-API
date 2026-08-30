@@ -209,7 +209,7 @@ helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager \
 ```
 
 
-> ii. Creating the `cluster-issuer.yaml` will create certificate
+> ii. Creating the `cluster-issuer.yaml`  (needed before any Certificate works) 
 
 ```yaml
 apiVersion: cert-manager.io/v1
@@ -283,13 +283,13 @@ metadata:
   namespace: webapps
 spec:
   parentRefs:
-    - name: gate-https
-      sectionName: https
+    - name: gate-https    #the name of the Gatewaycreated earlier
+      sectionName: https  # pointing to the https section in the listener
   hostnames:
     - "www.bbproject.space"
   rules:
     - backendRefs:
-        - name: bankapp-service
+        - name: bankapp-service #refers to the green-svc.ymal file
           port: 80
 
 ```
@@ -305,10 +305,10 @@ metadata:
 spec:
   parentRefs:
     - name: gate-https
-      sectionName: http-redirect
+      sectionName: http-redirect #refers to the https-redirect section in the Gateway recource
   hostnames:
       - "www.bbprojects.space"
-  rules:
+  rules:                        # This rule here makes sure that http traffic seamlessly redirects to https
     - filters:
         - type: RequestRedirect
           requestRedirect:
