@@ -24,7 +24,7 @@ EOF
 
 ```
 
-### Installing `kgateway Envoy proxy` Kubernetes CRD
+### To Use `kgateway Envoy proxy` Kubernetes CRD
 
 1. Install the custom resources of the Kubernetes Gateway API version 1.6.1.
 
