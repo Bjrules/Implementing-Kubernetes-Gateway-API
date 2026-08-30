@@ -24,7 +24,7 @@ EOF
 
 ```
 
-### Using kgateway
+### Using kgateway with Envoy proxy
 
 1. Install the custom resources of the Kubernetes Gateway API version 1.6.1.
 
