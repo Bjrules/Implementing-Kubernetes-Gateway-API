@@ -56,5 +56,6 @@ helm upgrade -i -n kgateway-system kgateway oci://cr.kgateway.dev/kgateway-dev/c
 5. Verify that the kgateway GatewayClass is created. 
 `kubectl get gatewayclass kgateway` or `kubectl get gatewayclass kgateway -o yaml`
 
+See guide for uninstall [Click Here](https://kgateway.dev/docs/envoy/latest/operations/uninstall/)
 
 
