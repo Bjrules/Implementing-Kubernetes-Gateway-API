@@ -1,4 +1,19 @@
 # Implementing-Kubernetes-Gateway-API
+
+## The mental model shift first
+
+| Ingress API | Gateway API |
+|---|---|
+| One resource type (`Ingress`) | Split into 3 roles: `GatewayClass`, `Gateway`, `HTTPRoute` |
+| Behavior controlled via **annotations** (controller-specific, non-portable) | Behavior controlled via **structured fields** in the spec itself |
+| One controller usually owns everything | **Multi-tenant by design** — infra team owns the Gateway, app teams own their own HTTPRoutes |
+
+```
+GatewayClass   → "what implementation handles this" (like a StorageClass, but for networking)
+Gateway        → the actual listener (IP, port, TLS cert) — usually owned by platform/infra team
+HTTPRoute      → routing rules (host/path → backend service) — usually owned by app teams (you, for bankapp)
+```
+
 *This repo implements the use of kgateway controller to implement Kubernetes Gateway API. kindly bear in mind that that there are other gatewayAPI controller as well for example envoyproxy*
 
 ### To use Envoy Gateway:
@@ -23,7 +38,7 @@ spec:
 EOF
 
 ```
-## Phase One ( Installations and Setup)
+## Phase One ( Setup of Kubernetes and  Installations of the Gateway API CRDs)
 
 > Set up kubernetes and configure it `awscli` `terraform` `kubectl` `helm` etc
 
@@ -64,8 +79,61 @@ helm upgrade -i -n kgateway-system kgateway oci://cr.kgateway.dev/kgateway-dev/c
 
 See guide for uninstallation [Click Here](https://kgateway.dev/docs/envoy/latest/operations/uninstall/)
 
-## Phase One Implementation
+## Phase Two (Creation of Deployments, Service, Gateway, Cluster Issuer and  HTTPRoute )
 
-1
+1. Deployments 
+i. (mysql.yaml with the service `mysql-service`)
+
+```yaml
+---
+# MySQL Deployment with Resource Requests
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: mysql:8
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "Test@123"
+        - name: MYSQL_DATABASE
+          value: "bankappdb"
+        ports:
+        - containerPort: 3306
+          name: mysql
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+
+
+```
+
 
 
