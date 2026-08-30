@@ -316,5 +316,5 @@ spec:
              statusCode: 301
 
 ```
-
-
+# Notes on Advance Routing.
+## Gateway API Routing Rules (HTTPRoute)
