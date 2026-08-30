@@ -48,9 +48,13 @@ helm upgrade -i -n kgateway-system kgateway oci://cr.kgateway.dev/kgateway-dev/c
 --version v2.4.3
 
 ```
-> see [The Official kgateway site for detailed installation instruction ](https://kgateway.dev/docs/envoy/latest/install/helm/)
+> see [The Official kgateway site for detailed installation instructions ](https://kgateway.dev/docs/envoy/latest/install/helm/)
 
+4. Verify that the control plane is up and running.
+`kubectl get pods -n kgateway-system` or `kubectl get all -n kgateway-system`
 
+5. Verify that the kgateway GatewayClass is created. 
+`kubectl get gatewayclass kgateway` or `kubectl get gatewayclass kgateway -o yaml`
 
 
 
