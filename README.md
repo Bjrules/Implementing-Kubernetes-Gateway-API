@@ -294,7 +294,7 @@ spec:
 
 ```
 
-> iii. Create HTTP Redirect `http-redirect.yaml`
+> iii. Create HTTP Redirect `http-redirect.yaml`  (optional but recommended) 
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
