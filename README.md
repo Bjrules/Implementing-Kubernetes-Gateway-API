@@ -189,7 +189,7 @@ spec:
             cpu: "1000m"
 ```
 
-2. Install certmanager and create/configure a Cluster Issuer
+## 2. Install cert-manager and create/configure a Cluster Issuer for TLS/HTTPS
 
 > i. Install Cert-Manager.
 
@@ -231,9 +231,9 @@ spec:
 
 ```
 
-3. Create and Initialize Gateway and HTTPRoute and http-redirect
+## 3. Create and Initialize Gateway and HTTPRoute and http-redirect
 
-> i. Create Gateway `gateway-https.yaml`
+> i. Create Gateway `gateway-https.yaml` this is where TLS/HTTPS gets configured 
 
 ```yaml
 apiVersion: gateway.networking.k8s.io/v1
