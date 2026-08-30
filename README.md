@@ -23,6 +23,10 @@ spec:
 EOF
 
 ```
+## Phase One ( Installations and Setup)
+
+> Set up kubernetes and configure it `awscli` `terraform` `kubectl` `helm` etc
+
 
 ### To Use `kgateway Envoy proxy` Kubernetes CRD
 
@@ -60,6 +64,8 @@ helm upgrade -i -n kgateway-system kgateway oci://cr.kgateway.dev/kgateway-dev/c
 
 See guide for uninstallation [Click Here](https://kgateway.dev/docs/envoy/latest/operations/uninstall/)
 
+## Phase One Implementation
 
+1
 
 
