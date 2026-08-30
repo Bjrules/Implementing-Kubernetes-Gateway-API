@@ -50,6 +50,8 @@ helm upgrade -i -n kgateway-system kgateway oci://cr.kgateway.dev/kgateway-dev/c
 ```
 > see [The Official kgateway site for detailed installation instructions ](https://kgateway.dev/docs/envoy/latest/install/helm/)
 
+>Also see you can [install kgateway of kubernetes cluster using ArgoCD](https://kgateway.dev/docs/envoy/latest/install/argocd/)
+
 4. Verify that the control plane is up and running.
 `kubectl get pods -n kgateway-system` or `kubectl get all -n kgateway-system`
 
