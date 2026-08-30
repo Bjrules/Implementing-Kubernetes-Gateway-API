@@ -293,3 +293,27 @@ spec:
           port: 80
 
 ```
+
+> iii. Create HTTP Redirect `http-redirect.yaml`
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bankapp-redirect
+  namespace: webapps
+spec:
+  parentRefs:
+    - name: gate-https
+      sectionName: http-redirect
+  hostnames:
+      - "www.bbprojects.space"
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+             scheme: https
+             statusCode: 301
+
+
+```
