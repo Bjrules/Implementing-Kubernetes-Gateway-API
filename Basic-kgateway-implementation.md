@@ -40,7 +40,7 @@ helm upgrade -i -n kgateway-system kgateway oci://cr.kgateway.dev/kgateway-dev/c
 See guide for uninstallation [Click Here](https://kgateway.dev/docs/envoy/latest/operations/uninstall/)
 
 ## Deploy mysql and Bankapp Application
-
+see the following files `mysql.yaml` , `green-svc.yaml` and `green-deployment.yaml
 
 ## Configure the Gateway and HTTPRoute
 
