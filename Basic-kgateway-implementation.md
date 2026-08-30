@@ -41,7 +41,6 @@ See guide for uninstallation [Click Here](https://kgateway.dev/docs/envoy/latest
 
 ## Deploy mysql and Bankapp Application
 
-see README.md
 
 ## Configure the Gateway and HTTPRoute
 
