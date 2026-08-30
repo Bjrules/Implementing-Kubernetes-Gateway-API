@@ -79,10 +79,10 @@ helm upgrade -i -n kgateway-system kgateway oci://cr.kgateway.dev/kgateway-dev/c
 
 See guide for uninstallation [Click Here](https://kgateway.dev/docs/envoy/latest/operations/uninstall/)
 
-## Phase Two (Creation of Deployments, Service, Gateway, Cluster Issuer and  HTTPRoute )
+## Phase Two (Creation of Deployments, Service, Gateway, Cert-Manager, Cluster Issuer and  HTTPRoute )
 
-1. Deployments 
-i. (mysql.yaml with the service `mysql-service`)
+1. Deployments  and service
+> i. (mysql.yaml with the service `mysql-service`)
 
 ```yaml
 ---
@@ -132,8 +132,164 @@ spec:
   selector:
     app: mysql
 
+```
+> ii. ( Create `green-svc.yaml` the bankapp-service for the Application)
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: bankapp-service
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: bankapp
+    version: green 
+
+```
+> iii. Create the `green.yaml` which is the application
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bankapp-green
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bankapp
+      version: green
+  template:
+    metadata:
+      labels:
+        app: bankapp
+        version: green
+    spec:
+      containers:
+      - name: bankapp
+        image: bjrules/bankapp:v29 # Adjust the image tag for the green version
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:mysql://mysql-service:3306/bankappdb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+        - name: SPRING_DATASOURCE_USERNAME
+          value: root
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: Test@123
+        resources:
+          requests:
+            memory: "500Mi"
+            cpu: "500m"
+          limits:
+            memory: "1000Mi"
+            cpu: "1000m"
+```
+
+2. Install certmanager and create/configure a Cluster Issuer
+
+> i. Install Cert-Manager.
+
+```bash
+
+helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager \
+    --namespace cert-manager \
+    --create-namespace \
+    --version v1.19.2 \
+    --set config.apiVersion=controller.config.cert-manager.io/v1alpha1 \
+    --set config.kind=ControllerConfiguration \
+    --set config.enableGatewayAPI=true \
+    --set crds.enabled=true
+
+    kubectl wait --for=condition=Ready pods --all -n cert-manager
 
 ```
 
 
+> ii. Creating the `cluster-issuer.yaml` will create certificate
 
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: justbj@live.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: gate-https
+                kind: Gateway
+
+```
+
+3. Create and Initialize Gateway and HTTPRoute and http-redirect
+
+> i. Create Gateway `gateway-https.yaml`
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gate-https
+  namespace: webapps
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  gatewayClassName: kgateway # kgateway refers to the name of the control plane pod
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: "www.bbproject.space"
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "www.bbproject.space"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: bbproject-space-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: http-redirect
+      protocol: HTTP
+      port: 80
+      hostname: "www.bbprojects.space"
+
+```
+
+> ii. create HTTPRoute `route-https.yaml`
+
+```yaml
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: https-routing
+  namespace: webapps
+spec:
+  parentRefs:
+    - name: gate-https
+      sectionName: https
+  hostnames:
+    - "www.bbproject.space"
+  rules:
+    - backendRefs:
+        - name: bankapp-service
+          port: 80
+
+```
