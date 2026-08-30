@@ -1,5 +1,6 @@
 # Implementing-Kubernetes-Gateway-API
-*This repo implements the use of kgateway controller to implement Kubernetes Gateway API. kindly bear in mind that that there are other gateway controller as well for example envoyproxy *
+*This repo implements the use of kgateway controller to implement Kubernetes Gateway API. kindly bear in mind that that there are other gatewayAPI controller as well for example envoyproxy*
+
 ### To use Envoy Gateway:
 
 1. Install the CRDs and controller:
