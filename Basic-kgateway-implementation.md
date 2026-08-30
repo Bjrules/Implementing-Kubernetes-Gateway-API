@@ -1,6 +1,6 @@
 Kgateway implementation
 
-## SetUP Kubernetes
+## Setup Kubernetes and install awscli, Terraform, helm kubectl etc.
 
 1.) Create  `gateway.yaml`
 
