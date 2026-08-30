@@ -25,3 +25,10 @@ EOF
 ```
 
 ### Using kgateway
+
+1. Install the custom resources of the Kubernetes Gateway API version 1.6.1.
+
+```
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.1/standard-install.yaml
+
+```
