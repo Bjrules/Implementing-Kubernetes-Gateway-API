@@ -318,3 +318,229 @@ spec:
 ```
 # Notes on Advance Routing.
 ## Gateway API Routing Rules (HTTPRoute)
+Think of an `HTTPRoute` as a traffic cop standing at an intersection. It looks at incoming requests and decides: **"where does this one go?"** It makes that decision by checking things like the URL path, the hostname, headers, or even just splitting traffic randomly by percentage.
+
+## The basic shape of a rule
+
+```yaml
+rules:
+  - matches:
+      - path:
+          type: PathPrefix
+          value: /some-path
+    backendRefs:
+      - name: some-service
+        port: 8080
+```
+
+In plain English: **"IF the request path starts with `/some-path`, THEN send it to `some-service` on port 8080."**
+
+You can have **many rules** in one HTTPRoute, checked top to bottom — first match wins.
+
+---
+
+## Routing to 6 different endpoints
+
+Say you've split `bankapp` into microservices — accounts, transactions, cards, loans, notifications, and auth. Here's how you'd route to all 6 based on URL path:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: bankapp-route
+  namespace: bankapp
+spec:
+  parentRefs:
+    - name: bankapp-gateway
+      sectionName: https
+  hostnames:
+    - "www.bbprojects.space"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /accounts
+      backendRefs:
+        - name: accounts-service
+          port: 8080
+
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /transactions
+      backendRefs:
+        - name: transactions-service
+          port: 8080
+
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /cards
+      backendRefs:
+        - name: cards-service
+          port: 8080
+
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /loans
+      backendRefs:
+        - name: loans-service
+          port: 8080
+
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /notifications
+      backendRefs:
+        - name: notifications-service
+          port: 8080
+
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /auth
+      backendRefs:
+        - name: auth-service
+          port: 8080
+
+    # catch-all fallback for anything not matched above
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: bankapp-service
+          port: 8080
+```
+
+**Plain English**: "A request to `www.bbprojects.space/accounts/123` goes to the accounts service. A request to `/loans/apply` goes to the loans service. Anything else falls through to the main bankapp service." Order matters — Gateway API actually sorts by most-specific match automatically (longer path prefixes win), but it's still good practice to put your catch-all `/` rule last for readability.
+
+---
+
+## Types of matching you can use — in plain English
+
+### 1. Path matching (what you'll use most)
+
+```yaml
+path:
+  type: PathPrefix    # "starts with" — /accounts matches /accounts/123, /accounts/456, etc.
+  value: /accounts
+```
+```yaml
+path:
+  type: Exact          # "must match exactly" — only /health matches, not /health/check
+  value: /health
+```
+
+### 2. Header matching
+
+**Plain English**: "If the request has this specific header, send it here."
+```yaml
+matches:
+  - headers:
+      - name: X-Beta-User
+        value: "true"
+    path:
+      type: PathPrefix
+      value: /accounts
+```
+Useful for canary testing — send beta users to a new version without changing the URL.
+
+### 3. Method matching
+
+**Plain English**: "Only route this if it's a POST/GET/etc."
+```yaml
+matches:
+  - method: POST
+    path:
+      type: PathPrefix
+      value: /transactions
+```
+
+### 4. Query parameter matching
+
+```yaml
+matches:
+  - queryParams:
+      - name: version
+        value: "v2"
+```
+**Plain English**: "If the URL has `?version=v2` in it, route here."
+
+### 5. Combining conditions (AND logic within one `matches` entry)
+
+```yaml
+matches:
+  - path:
+      type: PathPrefix
+      value: /accounts
+    method: GET
+```
+**Plain English**: "Only if it's BOTH a GET request AND the path starts with `/accounts`."
+
+If you list **multiple entries under `matches`**, that's OR logic — any one of them being true triggers the rule.
+
+---
+
+## Splitting traffic between multiple backends for the SAME path (weighted routing)
+
+This is different from routing to different services by path — this is sending the **same** request to a mix of backends, useful for canary deployments or blue-green cutovers:
+
+```yaml
+rules:
+  - matches:
+      - path:
+          type: PathPrefix
+          value: /accounts
+    backendRefs:
+      - name: accounts-service-v1
+        port: 8080
+        weight: 90
+      - name: accounts-service-v2
+        port: 8080
+        weight: 10
+```
+**Plain English**: "Send 90% of `/accounts` traffic to the old version, 10% to the new version — gradually shift the number up as you gain confidence." This is genuinely one of the biggest upgrades over Ingress, which couldn't do this natively without controller-specific annotations.
+
+---
+
+## One important structural note
+
+Since you have 6 real backend services, you have two design choices:
+
+| Approach | When to use |
+|---|---|
+| **One HTTPRoute, many rules** (what I showed above) | Simple, one team owns routing, fine for a single app split into services |
+| **6 separate HTTPRoutes**, each owned by its respective service's team . | Better for larger orgs — each microservice team can manage their own routing rules independently, all pointing at the same shared `Gateway` |
+
+Multiple HTTPRoutes can attach to the same Gateway simultaneously — this is actually the core design idea behind Gateway API's role-based split (infra team owns the `Gateway`, each app team owns their own `HTTPRoute`).
+
+Example of a standalone route for just the accounts team:
+
+```yaml
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: accounts-route
+  namespace: accounts       # can even live in a DIFFERENT namespace than the Gateway
+spec:
+  parentRefs:
+    - name: bankapp-gateway
+      namespace: bankapp
+      sectionName: https
+  hostnames:
+    - "www.bbprojects.space"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /accounts
+      backendRefs:
+        - name: accounts-service
+          port: 8080
+          
+```
+
+---
