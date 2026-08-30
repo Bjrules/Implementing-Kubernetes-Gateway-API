@@ -315,5 +315,4 @@ spec:
              scheme: https
              statusCode: 301
 
-
 ```
